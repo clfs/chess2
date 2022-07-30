@@ -1,0 +1,4 @@
+id name My Chess Engine
+id author Firstname Lastname
+option name DoFoo type button
+option name Fruit type combo default apple var apple var banana
