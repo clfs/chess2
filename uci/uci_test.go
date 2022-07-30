@@ -54,14 +54,9 @@ func TestOption_UnmarshalText(t *testing.T) {
 
 func readTestdata(t *testing.T, name string) []byte {
 	t.Helper()
-	f, err := os.Open(filepath.Join("testdata", name))
+	data, err := os.ReadFile(filepath.Join("testdata", name))
 	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	data, err := io.ReadAll(f)
-	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("os.ReadFile: %v", err)
 	}
 	return data
 }
