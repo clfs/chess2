@@ -79,11 +79,11 @@ func TestClient_UCI(t *testing.T) {
 	if err := c.UCI(); err != nil {
 		t.Errorf("err: %v", err)
 	}
-	if diff := cmp.Diff(want.name, c.Name); diff != "" {
-		t.Errorf("name: mismatch (-want +got):\n%s", diff)
+	if want.name != c.Name {
+		t.Errorf("name: want %s, got %s", want.name, c.Name)
 	}
-	if diff := cmp.Diff(want.author, c.Author); diff != "" {
-		t.Errorf("author: mismatch (-want +got):\n%s", diff)
+	if want.author != c.Author {
+		t.Errorf("author: want %s, got %s", want.author, c.Author)
 	}
 	if diff := cmp.Diff(want.options, c.Options, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
 		t.Errorf("options: mismatch (-want +got):\n%s", diff)
