@@ -142,9 +142,9 @@ func (c *Client) PositionStartPos(moves []string) {
 	fmt.Fprintf(c.w, "\n")
 }
 
-// GoParameters contains parameters for the "go" command. Note that fields of
-// type time.Duration are truncated to the millisecond.
-type GoParameters struct {
+// SearchParameters contains parameters for the "go" command. Note that fields
+// of type time.Duration are truncated to the millisecond.
+type SearchParameters struct {
 	SearchMoves []string // Restrict search to these moves, if any.
 
 	Ponder   bool          // Search in ponder mode.
@@ -162,52 +162,52 @@ type GoParameters struct {
 	Nodes int // Number of nodes to search. 0 is ignored.
 }
 
-func (p GoParameters) String() string {
+func (s SearchParameters) String() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "go")
-	if p.Ponder {
+	if s.Ponder {
 		fmt.Fprintf(&b, " ponder")
 	}
-	if p.Infinite {
+	if s.Infinite {
 		fmt.Fprintf(&b, " infinite")
 	}
-	if p.Mate != 0 {
-		fmt.Fprintf(&b, " mate %d", p.Mate)
+	if s.Mate != 0 {
+		fmt.Fprintf(&b, " mate %d", s.Mate)
 	}
-	if p.MoveTime != 0 {
-		fmt.Fprintf(&b, " movetime %d", p.MoveTime)
+	if s.MoveTime != 0 {
+		fmt.Fprintf(&b, " movetime %d", s.MoveTime)
 	}
-	if p.WhiteTime != 0 {
-		fmt.Fprintf(&b, " wtime %d", p.WhiteTime)
+	if s.WhiteTime != 0 {
+		fmt.Fprintf(&b, " wtime %d", s.WhiteTime)
 	}
-	if p.BlackTime != 0 {
-		fmt.Fprintf(&b, " btime %d", p.BlackTime)
+	if s.BlackTime != 0 {
+		fmt.Fprintf(&b, " btime %d", s.BlackTime)
 	}
-	if p.WhiteIncrement != 0 {
-		fmt.Fprintf(&b, " winc %d", p.WhiteIncrement)
+	if s.WhiteIncrement != 0 {
+		fmt.Fprintf(&b, " winc %d", s.WhiteIncrement)
 	}
-	if p.BlackIncrement != 0 {
-		fmt.Fprintf(&b, " binc %d", p.BlackIncrement)
+	if s.BlackIncrement != 0 {
+		fmt.Fprintf(&b, " binc %d", s.BlackIncrement)
 	}
-	if p.MovesToGo != 0 {
-		fmt.Fprintf(&b, " movestogo %d", p.MovesToGo)
+	if s.MovesToGo != 0 {
+		fmt.Fprintf(&b, " movestogo %d", s.MovesToGo)
 	}
-	if p.Depth != 0 {
-		fmt.Fprintf(&b, " depth %d", p.Depth)
+	if s.Depth != 0 {
+		fmt.Fprintf(&b, " depth %d", s.Depth)
 	}
-	if p.Nodes != 0 {
-		fmt.Fprintf(&b, " nodes %d", p.Nodes)
+	if s.Nodes != 0 {
+		fmt.Fprintf(&b, " nodes %d", s.Nodes)
 	}
 	// For best compatibility, "searchmoves" is in the final position.
-	if len(p.SearchMoves) > 0 {
-		fmt.Fprintf(&b, "searchmoves %s", strings.Join(p.SearchMoves, " "))
+	if len(s.SearchMoves) > 0 {
+		fmt.Fprintf(&b, "searchmoves %s", strings.Join(s.SearchMoves, " "))
 	}
 	return b.String()
 }
 
 // Go sends a "go" command. It starts engine calculations.
-func (c *Client) Go(p GoParameters) {
-	fmt.Fprintf(c.w, "%s\n", p)
+func (c *Client) Go(s SearchParameters) {
+	fmt.Fprintf(c.w, "%s\n", s)
 }
 
 // Stop sends the "stop" command. It stops engine calculations.
