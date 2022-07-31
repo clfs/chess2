@@ -2,6 +2,7 @@ package uci
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -18,8 +19,8 @@ type Option struct {
 	Name    string
 	Type    string
 	Default string
-	Min     string
-	Max     string
+	Min     int
+	Max     int
 	Vars    []string
 }
 
@@ -59,9 +60,17 @@ func (o *Option) UnmarshalText(text []byte) error {
 		case "default":
 			o.Default = nxt
 		case "min":
-			o.Min = nxt
+			min, err := strconv.Atoi(nxt)
+			if err != nil {
+				return fmt.Errorf("todo")
+			}
+			o.Min = min
 		case "max":
-			o.Max = nxt
+			max, err := strconv.Atoi(nxt)
+			if err != nil {
+				return fmt.Errorf("todo")
+			}
+			o.Max = max
 		case "var":
 			o.Vars = append(o.Vars, nxt)
 		}

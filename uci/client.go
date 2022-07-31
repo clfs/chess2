@@ -13,12 +13,6 @@ import (
 type Client struct {
 	r io.Reader
 	w io.Writer
-
-	Result Result // The result of the last search. Set using Client.Go.
-}
-
-type Result struct {
-	// todo
 }
 
 // NewClient returns a UCI client that reads from r and writes to w.
@@ -205,9 +199,64 @@ func (s Search) String() string {
 	return b.String()
 }
 
+// Score is the score for a position.
+type Score struct {
+	CP int // The score in centipawns. If the side to move has a disadvantage, CP < 0.
+
+	// Mating information.
+	Mate struct {
+		Found bool
+		// If Found is true, a mate exists in this many moves. If the side to
+		// move will be mated, MovesUntil < 0. If the current position is a
+		// checkmate, MovesUntil == 0.
+		MovesUntil int
+	}
+
+	LowerBound bool // The score is a lower bound.
+	UpperBound bool // The score is an upper bound.
+}
+
+// Info is search information sent by the engine.
+type Info struct {
+	Depth          int           // Search depth in plies.
+	SelDepth       int           // Selective search depth in plies.
+	Time           time.Duration // Time spent searching.
+	Nodes          int           // Number of nodes searched.
+	PV             []string      // The best sequence of moves found.
+	MultiPV        int           // MultiPV index. 0 if MultiPV is disabled, otherwise starts at 1.
+	Score          Score         // The score for the move being searched.
+	CurrMove       string        // The move being searched.
+	CurrMoveNumber int           // The index of the move being searched. Starts at 1.
+	HashFull       int           // The hash table fullness in parts-per-thousand.
+	NPS            int           // Number of nodes searched per second.
+	TBHits         int           // Number of positions found in tablebases.
+	CPULoad        int           // The CPU usage in parts-per-thousand.
+	String         string        // An arbitrary string.
+	Refutation     []string      // A sequence of moves that refutes the first move in the sequence.
+	CurrLine       []string      // The line the engine is currently evaluating.
+}
+
+type BestMove struct {
+	Move   string // The best move in the current position.
+	Ponder string // The move the engine would like to ponder.
+}
+
 // Go sends a "go" command. It starts engine calculations.
-func (c *Client) Go(s Search) {
+func (c *Client) Go(s Search) (<-chan Info, <-chan BestMove) {
 	fmt.Fprintf(c.w, "%s\n", s)
+
+	infoCh := make(chan Info)
+	bestCh := make(chan BestMove)
+
+	scanner := bufio.NewScanner(c.r)
+
+	for scanner.Scan() {
+		if scanner.Text() == "bestmove" {
+			break
+		}
+	}
+
+	return infoCh, bestCh
 }
 
 // Stop sends the "stop" command. It stops engine calculations.

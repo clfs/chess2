@@ -22,7 +22,7 @@ func TestOption_UnmarshalText(t *testing.T) {
 		},
 		{
 			[]byte("option name Move Overhead type spin default 10 min 0 max 5000"),
-			Option{Name: "Move Overhead", Type: SpinOptionType, Default: "10", Min: "0", Max: "5000"},
+			Option{Name: "Move Overhead", Type: SpinOptionType, Default: "10", Min: 0, Max: 5000},
 		},
 		{
 			[]byte("option name HistoryFill type combo default fen_only var no var fen_only var always"),
