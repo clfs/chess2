@@ -142,9 +142,9 @@ func (c *Client) PositionStartPos(moves []string) {
 	fmt.Fprintf(c.w, "\n")
 }
 
-// SearchParameters contains parameters for the "go" command. Note that fields
-// of type time.Duration are truncated to the millisecond.
-type SearchParameters struct {
+// Search contains parameters for the "go" command. Note that fields of type
+// time.Duration are truncated to the millisecond.
+type Search struct {
 	SearchMoves []string // Restrict search to these moves, if any.
 
 	Ponder   bool          // Search in ponder mode.
@@ -162,7 +162,7 @@ type SearchParameters struct {
 	Nodes int // Number of nodes to search. 0 is ignored.
 }
 
-func (s SearchParameters) String() string {
+func (s Search) String() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "go")
 	if s.Ponder {
@@ -206,7 +206,7 @@ func (s SearchParameters) String() string {
 }
 
 // Go sends a "go" command. It starts engine calculations.
-func (c *Client) Go(s SearchParameters) {
+func (c *Client) Go(s Search) {
 	fmt.Fprintf(c.w, "%s\n", s)
 }
 
