@@ -1,81 +1,12 @@
-// Package uci implements a client for the Universal Chess Interface (UCI)
-// protocol.
 package uci
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
 	"strings"
 )
-
-const (
-	CheckOptionType  = "check"  // A boolean option.
-	SpinOptionType   = "spin"   // An integer option in a certain range.
-	ComboOptionType  = "combo"  // A string option from a list of available strings.
-	ButtonOptionType = "button" // A button option that causes an effect when set.
-	StringOptionType = "string" // A string option.
-)
-
-// Option represents an option that engines can set.
-type Option struct {
-	Name    string
-	Type    string
-	Default string
-	Min     string
-	Max     string
-	Vars    []string
-}
-
-// UnmarshalText unmarshals a textual representation of an Option.
-func (o *Option) UnmarshalText(text []byte) error {
-	fields := bytes.Fields(text)
-
-	if len(fields) < 5 {
-		return fmt.Errorf("todo")
-	}
-
-	var pos int
-
-	if f := fields[pos]; string(f) != "option" {
-		return fmt.Errorf("todo")
-	}
-	pos++
-
-	if f := fields[pos]; string(f) != "name" {
-		return fmt.Errorf("todo")
-	}
-	pos++
-
-	var nameBuf bytes.Buffer
-	for ; pos < len(fields); pos++ {
-		if string(fields[pos]) == "type" {
-			break
-		}
-		nameBuf.Write(fields[pos])
-		nameBuf.WriteByte(' ')
-	}
-	o.Name = strings.TrimSpace(nameBuf.String())
-
-	for ; pos < len(fields)-1; pos++ {
-		cur, nxt := fields[pos], fields[pos+1]
-		switch string(cur) {
-		case "type":
-			o.Type = string(nxt)
-		case "default":
-			o.Default = string(nxt)
-		case "min":
-			o.Min = string(nxt)
-		case "max":
-			o.Max = string(nxt)
-		case "var":
-			o.Vars = append(o.Vars, string(nxt))
-		}
-	}
-	return nil
-}
 
 // Client is a UCI-compatible client.
 type Client struct {
@@ -92,14 +23,13 @@ type Result struct {
 	// todo
 }
 
-// NewClient returns a client that reads UCI responses from r and writes UCI
-// commands to w.
+// NewClient returns a UCI client that reads from r and writes to w.
 func NewClient(r io.Reader, w io.Writer) *Client {
 	return &Client{r: r, w: w}
 }
 
 // NewClientFromPath runs the engine located at path and returns a client
-// connected to the engine.
+// connected to the engine's standard input and output.
 func NewClientFromPath(path string) (*Client, error) {
 	cmd := exec.Command(path)
 	stdin, err := cmd.StdinPipe()
@@ -116,16 +46,9 @@ func NewClientFromPath(path string) (*Client, error) {
 	return NewClient(stdout, stdin), nil
 }
 
-func (c *Client) send(s string) error {
-	_, err := c.w.Write([]byte(s + "\n"))
-	return err
-}
-
 // UCI sends the "uci" command. It tells the engine to use the UCI protocol.
 func (c *Client) UCI() error {
-	if err := c.send("uci"); err != nil {
-		return err
-	}
+	fmt.Fprintln(c.w, "uci")
 
 	s := bufio.NewScanner(c.r)
 outer:
@@ -150,21 +73,18 @@ outer:
 	return s.Err()
 }
 
-// Debug sends the "debug" command. It toggles the engine's debug mode. Many
-// engines do not support this command.
-func (c *Client) Debug(on bool) error {
+// Debug sends the "debug" command. It toggles the engine's debug mode.
+func (c *Client) Debug(on bool) {
 	if on {
-		return c.send("debug on")
+		fmt.Fprintln(c.w, "debug on")
 	}
-	return c.send("debug off")
+	fmt.Fprintln(c.w, "debug off")
 }
 
-// IsReady sends the "isready" command. It returns when the engine is ready to
+// IsReady sends the "isready" command. It blocks until the engine is ready to
 // accept commands.
 func (c *Client) IsReady() error {
-	if err := c.send("isready"); err != nil {
-		return err
-	}
+	fmt.Fprintln(c.w, "isready")
 
 	s := bufio.NewScanner(c.r)
 	for s.Scan() {
@@ -190,17 +110,18 @@ type RegisterParams struct {
 }
 
 // Register sends the "register" command. It submits registration information
-// for licensing. Many engines do not support this command.
-func (c *Client) Register(r RegisterParams) error {
+// for licensing.
+func (c *Client) Register(r RegisterParams) {
 	if r.Later {
-		return c.send("register later")
+		fmt.Fprintln(c.w, "register later")
 	}
-	return c.send(fmt.Sprintf("register name %s code %s", r.Name, r.Code))
+	fmt.Fprintf(c.w, "register name %s code %s\n", r.Name, r.Code)
 }
 
-// UCINewGame sends the "ucinewgame" command.
-func (c *Client) UCINewGame() error {
-	return c.send("ucinewgame")
+// UCINewGame sends the "ucinewgame" command. This tells the engine the next
+// search will be from a different game.
+func (c *Client) UCINewGame() {
+	fmt.Fprintln(c.w, "ucinewgame")
 }
 
 // PositionParams contains parameters for the "position" command.
@@ -224,17 +145,17 @@ func (c *Client) Go(p GoParams) error {
 }
 
 // Stop sends the "stop" command. It stops engine calculations.
-func (c *Client) Stop() error {
-	return c.send("stop")
+func (c *Client) Stop() {
+	fmt.Fprintln(c.w, "stop")
 }
 
 // PonderHit sends the "ponderhit" command. It tells the engine that the
 // opponent has played its best move.
-func (c *Client) PonderHit() error {
-	return c.send("ponderhit")
+func (c *Client) PonderHit() {
+	fmt.Fprintln(c.w, "ponderhit")
 }
 
 // Quit sends the "quit" command. It tells the engine to quit.
-func (c *Client) Quit() error {
-	return c.send("quit")
+func (c *Client) Quit() {
+	fmt.Fprintln(c.w, "quit")
 }
