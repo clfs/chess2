@@ -14,10 +14,7 @@ type Client struct {
 	r io.Reader
 	w io.Writer
 
-	Name    string   // The name of the engine.
-	Author  string   // The author of the engine.
-	Options []Option // Available engine options.
-	Result  Result   // The result of the last search.
+	Result Result // The result of the last search. Set using Client.Go.
 }
 
 type Result struct {
@@ -49,7 +46,7 @@ func NewClientFromPath(path string) (*Client, error) {
 
 // UCI sends a "uci" command. It tells the engine to use the UCI protocol and
 // blocks until the engine confirms.
-func (c *Client) UCI() error {
+func (c *Client) UCI() (name, author string, opts []Option, err error) {
 	fmt.Fprintln(c.w, "uci")
 
 	s := bufio.NewScanner(c.r)
@@ -58,20 +55,21 @@ outer:
 		line := s.Text()
 		switch {
 		case strings.HasPrefix(line, "id name "):
-			c.Name = strings.TrimPrefix(line, "id name ")
+			name = strings.TrimPrefix(line, "id name ")
 		case strings.HasPrefix(line, "id author "):
-			c.Author = strings.TrimPrefix(line, "id author ")
+			author = strings.TrimPrefix(line, "id author ")
 		case strings.HasPrefix(line, "option "):
 			var opt Option
 			if err := opt.UnmarshalText([]byte(line)); err != nil {
-				return err
+				return "", "", nil, err
 			}
-			c.Options = append(c.Options, opt)
+			opts = append(opts, opt)
 		case line == "uciok":
 			break outer
 		}
 	}
-	return s.Err()
+
+	return name, author, opts, s.Err()
 }
 
 // Debug sends a "debug" command. It toggles the engine's debug mode.
@@ -164,46 +162,52 @@ type GoParameters struct {
 	Nodes int // Number of nodes to search. 0 is ignored.
 }
 
-// Go sends a "go" command. It starts engine calculations.
-func (c *Client) Go(p GoParameters) {
-	fmt.Fprintf(c.w, "go")
+func (p GoParameters) String() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "go")
 	if p.Ponder {
-		fmt.Fprintf(c.w, " ponder")
+		fmt.Fprintf(&b, " ponder")
 	}
 	if p.Infinite {
-		fmt.Fprintf(c.w, " infinite")
+		fmt.Fprintf(&b, " infinite")
 	}
-	if p.Mate > 0 {
-		fmt.Fprintf(c.w, " mate %d", p.Mate)
+	if p.Mate != 0 {
+		fmt.Fprintf(&b, " mate %d", p.Mate)
 	}
-	if p.MoveTime > 0 {
-		fmt.Fprintf(c.w, " movetime %d", p.MoveTime.Milliseconds())
+	if p.MoveTime != 0 {
+		fmt.Fprintf(&b, " movetime %d", p.MoveTime)
 	}
-	if p.WhiteTime > 0 {
-		fmt.Fprintf(c.w, " wtime %d", p.WhiteTime.Milliseconds())
+	if p.WhiteTime != 0 {
+		fmt.Fprintf(&b, " wtime %d", p.WhiteTime)
 	}
-	if p.BlackTime > 0 {
-		fmt.Fprintf(c.w, " btime %d", p.BlackTime.Milliseconds())
+	if p.BlackTime != 0 {
+		fmt.Fprintf(&b, " btime %d", p.BlackTime)
 	}
-	if p.WhiteIncrement > 0 {
-		fmt.Fprintf(c.w, " winc %d", p.WhiteIncrement.Milliseconds())
+	if p.WhiteIncrement != 0 {
+		fmt.Fprintf(&b, " winc %d", p.WhiteIncrement)
 	}
-	if p.BlackIncrement > 0 {
-		fmt.Fprintf(c.w, " binc %d", p.BlackIncrement.Milliseconds())
+	if p.BlackIncrement != 0 {
+		fmt.Fprintf(&b, " binc %d", p.BlackIncrement)
 	}
-	if p.MovesToGo > 0 {
-		fmt.Fprintf(c.w, " movestogo %d", p.MovesToGo)
+	if p.MovesToGo != 0 {
+		fmt.Fprintf(&b, " movestogo %d", p.MovesToGo)
 	}
-	if p.Depth > 0 {
-		fmt.Fprintf(c.w, " depth %d", p.Depth)
+	if p.Depth != 0 {
+		fmt.Fprintf(&b, " depth %d", p.Depth)
 	}
-	if p.Nodes > 0 {
-		fmt.Fprintf(c.w, " nodes %d", p.Nodes)
+	if p.Nodes != 0 {
+		fmt.Fprintf(&b, " nodes %d", p.Nodes)
 	}
 	// For best compatibility, "searchmoves" is in the final position.
 	if len(p.SearchMoves) > 0 {
-		fmt.Fprintf(c.w, " searchmoves %s", strings.Join(p.SearchMoves, " "))
+		fmt.Fprintf(&b, "searchmoves %s", strings.Join(p.SearchMoves, " "))
 	}
+	return b.String()
+}
+
+// Go sends a "go" command. It starts engine calculations.
+func (c *Client) Go(p GoParameters) {
+	fmt.Fprintf(c.w, "%s\n", p)
 }
 
 // Stop sends the "stop" command. It stops engine calculations.

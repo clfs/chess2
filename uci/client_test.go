@@ -23,9 +23,9 @@ func readTestdata(t *testing.T, name string) []byte {
 func TestClient_UCI(t *testing.T) {
 	data := readTestdata(t, "uci-response.txt")
 	want := struct {
-		name    string
-		author  string
-		options []Option
+		name   string
+		author string
+		opts   []Option
 	}{
 		"My Chess Engine",
 		"Firstname Lastname",
@@ -35,16 +35,17 @@ func TestClient_UCI(t *testing.T) {
 		},
 	}
 	c := NewClient(bytes.NewReader(data), io.Discard)
-	if err := c.UCI(); err != nil {
-		t.Errorf("err: %v", err)
+	name, author, opts, err := c.UCI()
+	if err != nil {
+		t.Fatalf("err: %v", err)
 	}
-	if want.name != c.Name {
-		t.Errorf("name: want %s, got %s", want.name, c.Name)
+	if want.name != name {
+		t.Errorf("name: want %s, got %s", want.name, name)
 	}
-	if want.author != c.Author {
-		t.Errorf("author: want %s, got %s", want.author, c.Author)
+	if want.author != author {
+		t.Errorf("author: want %s, got %s", want.author, author)
 	}
-	if diff := cmp.Diff(want.options, c.Options, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
-		t.Errorf("options: mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff(want.opts, opts, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+		t.Errorf("opts: mismatch (-want +got):\n%s", diff)
 	}
 }
