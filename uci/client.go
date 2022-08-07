@@ -44,8 +44,9 @@ func (c *Client) UCI() (name, author string, opts []Option, err error) {
 	fmt.Fprintln(c.w, "uci")
 
 	s := bufio.NewScanner(c.r)
-outer:
-	for s.Scan() {
+
+	var uciok bool
+	for s.Scan() && !uciok {
 		line := s.Text()
 		switch {
 		case strings.HasPrefix(line, "id name "):
@@ -59,11 +60,12 @@ outer:
 			}
 			opts = append(opts, opt)
 		case line == "uciok":
-			break outer
+			uciok = true
 		}
 	}
 
-	return name, author, opts, s.Err()
+	err = s.Err()
+	return
 }
 
 // Debug sends a "debug" command. It toggles the engine's debug mode.
